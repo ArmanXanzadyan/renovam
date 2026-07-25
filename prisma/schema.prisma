@@ -1,0 +1,87 @@
+// RenovAM — Prisma schema (Phase 2)
+// Single business-critical model: Lead. Catalog/portfolio stay in config.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection for the app (serverless-safe, e.g. PgBouncer/pooler).
+  url       = env("DATABASE_URL")
+  // Direct connection for migrations.
+  directUrl = env("DIRECT_URL")
+}
+
+enum ServiceType {
+  painting
+  flooring
+  laminating
+  tiling
+  electrical
+  plumbing
+  gypsum
+  complete
+}
+
+enum PropertyType {
+  APARTMENT
+  NEWBUILD
+  HOUSE
+  OFFICE
+}
+
+enum PreferredContact {
+  PHONE
+  VIBER
+  TELEGRAM
+  WHATSAPP
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  WON
+  LOST
+  SPAM
+}
+
+model Lead {
+  id               String           @id @default(uuid())
+
+  // Contact (only these two are required from the user)
+  fullName         String
+  phone            String
+  preferredContact PreferredContact @default(PHONE)
+
+  // Optional context
+  service          ServiceType?
+  message          String?
+  areaSqm          Int?
+  propertyType     PropertyType?
+  city             String?
+
+  // Estimate snapshot (populated by the calculator in a later phase)
+  estimateLow      Int?
+  estimateHigh     Int?
+  estimateInputs   Json?
+
+  // Attribution
+  source           String           @default("website")
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
+  ipAddress        String?
+
+  // Ops
+  status           LeadStatus       @default(NEW)
+  notifiedTelegram Boolean          @default(false)
+
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([service])
+}
